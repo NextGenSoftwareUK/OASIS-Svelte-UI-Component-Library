@@ -1,0 +1,24 @@
+{
+  "name": "@oasisomniverse/svelte",
+  "version": "1.0.0",
+  "description": "OASIS Omniverse Svelte 4 UI components",
+  "keywords": ["oasis", "omniverse", "svelte", "components"],
+  "author": "NextGenSoftware",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NextGenSoftwareUK/OASIS-Svelte-UI-Component-Library.git"
+  },
+  "main": "src/index.ts",
+  "svelte": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/*": "./src/components/*.svelte"
+  },
+  "files": ["src"],
+  "peerDependencies": {
+    "svelte": ">=4.0.0",
+    "@oasisomniverse/web4-api": ">=2.0.0"
+  },
+  "scripts": {}
+}
