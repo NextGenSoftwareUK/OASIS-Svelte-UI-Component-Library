@@ -16,20 +16,14 @@ npm install @oasisomniverse/svelte
 ```svelte
 <script>
   import { Login, AvatarConnect, KarmaToast } from '@oasisomniverse/svelte';
-
-  const config = { apiUrl: 'https://api.web4.oasisomniverse.one' };
-
-  function handleLogin(event) {
-    console.log('Avatar logged in:', event.detail);
-  }
 </script>
 
-<Login {config} on:success={handleLogin} />
-<AvatarConnect {config} on:login={handleLogin} on:logout={() => console.log('logged out')} />
-<KarmaToast message="Quest completed" amount={150} />
+<AvatarConnect />
+<KarmaToast />
+<Login on:loggedIn={handleLogin} on:switchTo={(e) => view = e.detail} />
 ```
 
-All components accept a `config` prop `{ apiUrl: string }`. Omit it to use the default API endpoint.
+Session state and API configuration are managed by `oasisStore` — shared across all components automatically. No config prop needed.
 
 ---
 
@@ -39,24 +33,19 @@ All components accept a `config` prop `{ apiUrl: string }`. Omit it to use the d
 
 #### `<Login>`
 
-Avatar login popup/form.
+Avatar login form. Dispatches navigation events to coordinate with your own auth flow.
 
 ```svelte
 <Login
-  {config}
-  on:success={(e) => console.log(e.detail)}
-  on:close={() => {}}
+  on:loggedIn={handleLogin}
+  on:switchTo={(e) => view = e.detail}
 />
 ```
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `config` | `{ apiUrl: string }` | default endpoint | OASIS API configuration |
-
 | Event | `event.detail` | Description |
 |---|---|---|
-| `success` | `{ avatarId, username, karma }` | Dispatched on successful login |
-| `close` | — | Dispatched when the popup is dismissed |
+| `loggedIn` | — | Dispatched on successful login |
+| `switchTo` | `'signup' \| 'forgot'` | Dispatched when the user clicks Sign Up or Forgot Password |
 
 ---
 
@@ -65,126 +54,57 @@ Avatar login popup/form.
 New avatar registration form.
 
 ```svelte
-<Signup {config} on:success={(e) => console.log(e.detail)} on:close={() => {}} />
+<Signup on:switchTo={(e) => view = e.detail} />
 ```
 
 | Event | `event.detail` | Description |
 |---|---|---|
-| `success` | avatar data object | Dispatched on successful registration |
-| `close` | — | Dispatched when dismissed |
+| `switchTo` | `'login'` | Dispatched when the user clicks Sign In |
 
 ---
 
 #### `<AvatarConnect>`
 
-Login/logout toggle chip — manages session state automatically.
+Login/logout toggle chip — fully self-contained. Manages session via `oasisStore`. No props or events required.
 
 ```svelte
-<AvatarConnect
-  {config}
-  sessionKey="oasis_session"
-  on:login={(e) => console.log(e.detail)}
-  on:logout={() => {}}
-/>
+<AvatarConnect />
 ```
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `config` | `{ apiUrl: string }` | default endpoint | OASIS API configuration |
-| `sessionKey` | `string` | `'oasis_session'` | sessionStorage key for login state persistence |
-
-| Event | `event.detail` | Description |
-|---|---|---|
-| `login` | `{ avatarId, username, karma }` | Dispatched after login |
-| `logout` | — | Dispatched after logout |
 
 ---
 
 #### `<ForgotPassword>`
 
 ```svelte
-<ForgotPassword {config} on:close={() => {}} />
+<ForgotPassword />
 ```
 
 ---
 
 #### `<ResetPassword>`
 
-Password reset form — use with the token from the reset email link.
-
 ```svelte
-<ResetPassword {config} token={tokenFromUrl} on:success={() => {}} />
+<ResetPassword />
 ```
-
-| Prop | Type | Description |
-|---|---|---|
-| `token` | `string` | **Required.** Reset token from the email link |
 
 ---
 
 #### `<VerifyEmail>`
 
 ```svelte
-<VerifyEmail {config} token={tokenFromUrl} on:success={() => {}} />
-```
-
----
-
-#### `<SearchAvatars>`
-
-```svelte
-<SearchAvatars {config} on:select={(e) => console.log(e.detail)} />
-```
-
-| Event | `event.detail` | Description |
-|---|---|---|
-| `select` | avatar object | Dispatched when the user picks an avatar |
-
----
-
-#### `<SendInvite>` / `<AcceptInvite>`
-
-```svelte
-<SendInvite {config} on:success={() => {}} />
-<AcceptInvite {config} inviteCode={code} on:success={() => {}} />
+<VerifyEmail />
 ```
 
 ---
 
 ### Avatar
 
-#### `<AvatarProfile>`
+Most avatar popups accept an `open` prop and dispatch `close`:
 
 ```svelte
-<AvatarProfile {config} avatarId="abc123" on:close={() => {}} />
-```
-
-| Prop | Type | Description |
-|---|---|---|
-| `avatarId` | `string` | Avatar to display — defaults to logged-in user |
-
----
-
-#### `<ViewAvatar>`
-
-```svelte
-<ViewAvatar {config} avatarId="abc123" />
-```
-
----
-
-#### `<EditAvatar>`
-
-```svelte
-<EditAvatar {config} on:success={() => {}} on:close={() => {}} />
-```
-
----
-
-#### `<ViewAvatarKarma>`
-
-```svelte
-<ViewAvatarKarma {config} avatarId="abc123" />
+<ViewAvatar {open} on:close={() => open = false} />
+<EditAvatar {open} on:close={() => open = false} />
+<AvatarWallet {open} on:close={() => open = false} />
 ```
 
 ---
@@ -193,58 +113,20 @@ Password reset form — use with the token from the reset email link.
 
 #### `<KarmaToast>`
 
-Floating karma notification.
+Singleton toast — render once near your app root. Triggered automatically by `$karmaToast` store when karma changes.
 
 ```svelte
-<KarmaToast message="Quest completed" amount={150} />
+<KarmaToast />
 ```
 
-| Prop | Type | Description |
-|---|---|---|
-| `message` | `string` | Reason text shown below the karma amount |
-| `amount` | `number` | Karma delta — positive shown in cyan, negative in red |
+No props. Driven by `oasisStore`.
 
 ---
 
 #### `<KarmaPanel>`
 
 ```svelte
-<KarmaPanel {config} on:close={() => {}} />
-```
-
----
-
-### Map
-
-```svelte
-<Map {config} on:close={() => {}} />
-```
-
----
-
-### NFT
-
-```svelte
-<NFT {config} nftId="nft-001" on:close={() => {}} />
-<PurchaseNFT {config} nftId="nft-001" on:success={() => {}} on:close={() => {}} />
-```
-
----
-
-### OApp
-
-```svelte
-<CreateOApp {config} on:success={(e) => console.log(e.detail)} on:close={() => {}} />
-<LaunchOApp {config} oappId="my-oapp" on:close={() => {}} />
-```
-
----
-
-### Seeds
-
-```svelte
-<Seeds {config} on:close={() => {}} />
-<PayWithSeeds {config} amount={50} recipientId="abc123" on:success={() => {}} on:close={() => {}} />
+<KarmaPanel {open} on:close={() => open = false} />
 ```
 
 ---
@@ -253,34 +135,37 @@ Floating karma notification.
 
 #### `<OasisModal>`
 
+Controlled via `open` prop.
+
 ```svelte
-<OasisModal title="My Modal" accentColor="#00c8ff" on:close={() => {}}>
+<OasisModal {open} accentColor="rgba(59,130,246,.3)" on:close={() => open = false}>
   <p>Modal content goes here.</p>
 </OasisModal>
 ```
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `title` | `string` | `''` | Modal header title |
-| `accentColor` | `string` | `'#00c8ff'` | Header accent colour |
+| `open` | `boolean` | `false` | Controls visibility |
+| `accentColor` | `string` | `'rgba(59,130,246,.3)'` | Border/accent colour |
+
+| Event | Description |
+|---|---|
+| `close` | Dispatched when backdrop or close button is clicked |
 
 ---
 
 #### `<NavBar>`
 
 ```svelte
-<NavBar {config} links={[{ label: 'Map', href: '/map' }]} />
+<NavBar />
 ```
 
 ---
 
-#### `<Settings>` / `<Wallet>` / `<StarField>` / `<ComingSoon>`
+#### `<StarField>`
 
 ```svelte
-<Settings {config} on:close={() => {}} />
-<Wallet {config} on:close={() => {}} />
 <StarField />
-<ComingSoon label="Quests" />
 ```
 
 ---
@@ -318,7 +203,7 @@ The OASIS component library ships with the **Dark Space** design system:
 - **Borders**: translucent cyan (`rgba(0,200,255,0.2)`)
 - **Cards**: glassy dark panels with `backdrop-filter: blur`
 
-Override the CSS custom properties to theme components for your own OAPP:
+Override CSS custom properties to theme components for your own OAPP:
 
 ```css
 :root {
